@@ -1,0 +1,6 @@
+#Collection of error usage
+## Malloc out of range
+Continously call malloc(1GB) until it returns NULL.</br>
+In fact, I malloc'ed 131071 GB...
+## Dead recursive
+Nothing but segment fault...
