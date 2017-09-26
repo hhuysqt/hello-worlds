@@ -22,13 +22,10 @@ if __name__ == '__main__':
     X, y = build_data.build_dataset(teamdata, competitions)
 
     # 开始预测
-    #model = joblib.load('./model.m')
-    #pred = model.predict(X)
-    #orig = y.values
+    model = joblib.load('./model.m')
+    pred = model.predict(X)
+    orig = y.values
     #pd.DataFrame({'orig':orig, 'pred':pred}).to_csv('./res.csv')
-    result = pd.read_csv('./res.csv')
-    pred = result['pred'].values
-    orig = result['orig'].values
 
     # 正确率
     res = pred * orig
@@ -45,6 +42,4 @@ if __name__ == '__main__':
     prop = np.ones(len(pred))
     for i in range(len(pred)):
         prop[i] = sigmoid(float(pred[i]))
-    print orig_clip
-    print prop
-    print metrics.roc_auc_score(orig_clip, prop)
+    print 'AUC: ', metrics.roc_auc_score(orig_clip, prop)
