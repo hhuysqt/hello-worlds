@@ -18,14 +18,15 @@ def sigmoid(X, useStatus = True):
         return float(X); 
 
 if __name__ == '__main__':
-    teamdata, competitions = build_data.prepare_csv('./teamData.csv', './matchDataTrain2.csv')
-    X, y = build_data.build_dataset(teamdata, competitions)
+    teamdata, competitions = build_data.prepare_csv('./teamData.csv', './matchDataTrain2.csv', 0)
+    X, y = build_data.build_dataset(teamdata, competitions, 0)
+    #X.to_csv('pred.csv')
 
     # 开始预测
     model = joblib.load('./model.m')
     pred = model.predict(X)
     orig = y.values
-    #pd.DataFrame({'orig':orig, 'pred':pred}).to_csv('./res.csv')
+    #pd.DataFrame({'orig':orig, 'pred':pred}).to_csv('./predres.csv')
 
     # 正确率
     res = pred * orig
@@ -42,4 +43,6 @@ if __name__ == '__main__':
     prop = np.ones(len(pred))
     for i in range(len(pred)):
         prop[i] = sigmoid(float(pred[i]))
+    print prop
+    print orig_clip
     print 'AUC: ', metrics.roc_auc_score(orig_clip, prop)

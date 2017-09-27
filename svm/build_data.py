@@ -12,34 +12,69 @@ from sklearn.externals import joblib
 # 队员数据包括：每队每个人的各项指标
 # 比赛数据包括：对战双方队伍、双方此前胜负情况（代表竞技状态）、结果
 # 返回：双方队伍的综合指标，对战胜负
-def build_dataset(teams, competitions, is_train = 1):
-    grouped_teams = teams.drop(['队员号'], axis=1).groupby('队名').mean().reset_index()
-    res_comp = pd.merge(competitions, grouped_teams, left_on='客场队名', right_on='队名')
-    res_comp = pd.merge(res_comp, grouped_teams, left_on='主场队名', right_on='队名')
-    res_comp['出场次数_x'] -= res_comp['出场次数_y']
-    res_comp['首发次数_x'] -= res_comp['首发次数_y']
-    res_comp['上场时间_x'] -= res_comp['上场时间_y']
-    res_comp['投篮命中次数_x'] -= res_comp['投篮命中次数_y']
-    res_comp['投篮出手次数_x'] -= res_comp['投篮出手次数_y']
-    res_comp['三分命中次数_x'] -= res_comp['三分命中次数_y']
-    res_comp['三分出手次数_x'] -= res_comp['三分出手次数_y']
-    res_comp['罚球命中次数_x'] -= res_comp['罚球命中次数_y']
-    res_comp['罚球出手次数_x'] -= res_comp['罚球出手次数_y']
-    res_comp['篮板总数_x'] -= res_comp['篮板总数_y']
-    res_comp['前场篮板_x'] -= res_comp['前场篮板_y']
-    res_comp['后场篮板_x'] -= res_comp['后场篮板_y']
-    res_comp['助攻_x'] -= res_comp['助攻_y']
-    res_comp['抢断_x'] -= res_comp['抢断_y']
-    res_comp['盖帽_x'] -= res_comp['盖帽_y']
-    res_comp['失误_x'] -= res_comp['失误_y']
-    res_comp['犯规_x'] -= res_comp['犯规_y']
-    res_comp['得分_x'] -= res_comp['得分_y']
-    X = res_comp.drop(['客场队名','主场队名','客场比分','队名_x','队名_y','出场次数_y','首发次数_y','上场时间_y','投篮命中次数_y','投篮出手次数_y','三分命中次数_y','三分出手次数_y','罚球命中次数_y','罚球出手次数_y','篮板总数_y','前场篮板_y','后场篮板_y','助攻_y','抢断_y','盖帽_y','失误_y','犯规_y','得分_y'], axis = 1)
+def build_dataset(teams, competitions, is_train = 1, need_y = 1):
+    gt = teams.drop(['队员号'], axis=1).groupby('队名').mean().reset_index()
+    gt['投篮准确率'] = gt['投篮命中次数'] / gt['投篮出手次数']
+    # gt.to_csv('gt.csv')
+    # merge会打乱顺序，只能手写
+    if need_y:
+        X = competitions.drop(['客场比分'], axis=1)
+    else:
+        X = competitions
+    X['出场次数'] = 0.0
+    X['首发次数'] = 0.0
+    X['上场时间'] = 0.0
+    X['投篮命中次数'] = 0.0
+    X['投篮出手次数'] = 0.0
+    X['三分命中次数'] = 0.0
+    X['三分出手次数'] = 0.0
+    X['罚球命中次数'] = 0.0
+    X['罚球出手次数'] = 0.0
+    X['篮板总数'] = 0.0
+    X['前场篮板'] = 0.0
+    X['后场篮板'] = 0.0
+    X['助攻'] = 0.0
+    X['抢断'] = 0.0
+    X['盖帽'] = 0.0
+    X['失误'] = 0.0
+    X['犯规'] = 0.0
+    X['得分'] = 0.0
     X['偏置'] = 1.0
-    y = res_comp['客场比分']
-    return X, y
+    for i in range(len(competitions)):
+        team1 = int(X['客场队名'].loc[i])
+        team2 = int(X['主场队名'].loc[i])
+        X.set_value(i, '出场次数', gt['出场次数'].loc[team1] - gt['出场次数'].loc[team2])
+        X.set_value(i, '首发次数', gt['首发次数'].loc[team1] - gt['首发次数'].loc[team2])
+        X.set_value(i, '上场时间', gt['上场时间'].loc[team1] - gt['上场时间'].loc[team2])
+        X.set_value(i, '投篮命中次数', gt['投篮命中次数'].loc[team1] - gt['投篮命中次数'].loc[team2])
+        X.set_value(i, '投篮出手次数', gt['投篮出手次数'].loc[team1] - gt['投篮出手次数'].loc[team2])
+        X.set_value(i, '三分命中次数', gt['三分命中次数'].loc[team1] - gt['三分命中次数'].loc[team2])
+        X.set_value(i, '三分出手次数', gt['三分出手次数'].loc[team1] - gt['三分出手次数'].loc[team2])
+        X.set_value(i, '罚球命中次数', gt['罚球命中次数'].loc[team1] - gt['罚球命中次数'].loc[team2])
+        X.set_value(i, '罚球出手次数', gt['罚球出手次数'].loc[team1] - gt['罚球出手次数'].loc[team2])
+        X.set_value(i, '篮板总数', gt['篮板总数'].loc[team1] - gt['篮板总数'].loc[team2])
+        X.set_value(i, '前场篮板', gt['前场篮板'].loc[team1] - gt['前场篮板'].loc[team2])
+        X.set_value(i, '后场篮板', gt['后场篮板'].loc[team1] - gt['后场篮板'].loc[team2])
+        X.set_value(i, '助攻', gt['助攻'].loc[team1] - gt['助攻'].loc[team2])
+        X.set_value(i, '抢断', gt['抢断'].loc[team1] - gt['抢断'].loc[team2])
+        X.set_value(i, '盖帽', gt['盖帽'].loc[team1] - gt['盖帽'].loc[team2])
+        X.set_value(i, '失误', gt['失误'].loc[team1] - gt['失误'].loc[team2])
+        X.set_value(i, '犯规', gt['犯规'].loc[team1] - gt['犯规'].loc[team2])
+        X.set_value(i, '得分', gt['得分'].loc[team1] - gt['得分'].loc[team2])
+    #X.to_csv('x.csv')
+    if need_y:
+        y = competitions['客场比分']
+    else:
+        y = np.ones(10)
+    print 'Data ok'
+    if is_train:
+        return X.loc[:9000], y.loc[:9000]
+    elif need_y:
+        return X.loc[9000:], y.loc[9000:]
+    else:
+        return X, y
 
-def prepare_csv(teamcsv, compcsv):
+def prepare_csv(teamcsv, compcsv, is_train = 1, need_y = 1):
     print 'Prepareing csv data'
     teamdata = pd.read_csv(teamcsv)
     competitions = pd.read_csv(compcsv)
@@ -47,9 +82,18 @@ def prepare_csv(teamcsv, compcsv):
     # 胜-负，为该队的比赛情况
     competitions['客场胜'] -= competitions['客场负']
     competitions['主场胜'] -= competitions['主场负']
-    # 比分相减，得到客场队伍的胜负情况
-    competitions['客场比分'] -= competitions['主场比分']
-    # delete unused column
-    competitions = competitions.drop(['客场负','主场负','主场比分'], axis = 1)
+    if need_y:
+        # 比分相减，得到客场队伍的胜负情况
+        competitions['客场比分'] -= competitions['主场比分']
+        # delete unused column
+        competitions = competitions.drop(['客场负','主场负','主场比分'], axis = 1)
+    else :
+        competitions = competitions.drop(['客场负','主场负'], axis = 1)
     return teamdata, competitions
+
+if __name__ == '__main__':
+    teamdata, competitions = prepare_csv('./teamData.csv', './matchDataTrain2.csv')
+    X, y = build_dataset(teamdata, competitions)
+    print X
+    print y
 
