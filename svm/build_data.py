@@ -66,18 +66,15 @@ def build_dataset(teams, competitions, is_train = 1, need_y = 1):
         y = competitions['客场比分']
     else:
         y = np.ones(10)
+    #X = X.drop(['客场队名', '主场队名'], axis=1)
     print 'Data ok'
-    if is_train:
-        return X.loc[:9000], y.loc[:9000]
-    elif need_y:
-        return X.loc[9000:], y.loc[9000:]
-    else:
-        return X, y
+    return X, y
 
 def prepare_csv(teamcsv, compcsv, is_train = 1, need_y = 1):
     print 'Prepareing csv data'
     teamdata = pd.read_csv(teamcsv)
     competitions = pd.read_csv(compcsv)
+    print competitions
     # 初步处理比赛情况
     # 胜-负，为该队的比赛情况
     competitions['客场胜'] -= competitions['客场负']
