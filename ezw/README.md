@@ -11,4 +11,10 @@ Things different form the classical EZW algorithm:
 - Encode each bitwise band instead of a weight approximation.
 - Take the wavelet result as a `heap` of quadtree, and iterate it in first-root order, instead of the original zigzag scheme.
 
+heap scheme:
+
 ![heap scheme](https://github.com/hhuysqt/hello-worlds/raw/master/ezw/quadheap.jpeg)
+
+result:
+
+![result](https://github.com/hhuysqt/hello-worlds/raw/master/ezw/result.jpeg)

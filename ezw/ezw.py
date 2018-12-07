@@ -40,45 +40,6 @@ def form_index(i) :
            ((i&256)>>4) + ((i&1024)>>5) + ((i&4096)>>6) + ((i&16384)>>7) + \
            ((i&65536)>>8) + ((i&262144)>>9) + ((i&1048576)>>10)
 
-def compress_band(encode) :
-    (x,y) = encode.shape
-    n = 0
-    cmpband = numpy.zeros(x*y, dtype = numpy.uint8)
-    for i in range(x*y) :
-        xindex = form_index(i)
-        yindex = form_index(i>>1)
-        #print '(',xindex,yindex,')',
-        if encode[xindex, yindex] == 0 :
-            # Check whether the father is also a zero tree
-            if encode[xindex/2, yindex/2] != 0 :
-                cmpband[n] = 0
-                n = n+1
-            else :
-                i = i+4
-        else :
-            cmpband[n] = encode[xindex, yindex]
-            n = n+1
-    #print ' '
-    #print 'Total:', n, 'codes.'
-    #print cmpband[0:n]
-    return cmpband[0:n], n
-
-def decompress_band(cmpband, cmpsize, xsize, ysize) :
-    decmp = numpy.zeros((xsize,ysize), dtype = numpy.uint8)
-    decmp[0,0] = cmpband[0]
-    n = 0
-    for i in range(xsize*ysize) :
-        xindex = form_index(i)
-        yindex = form_index(i>>1)
-        if decmp[xindex/2, yindex/2] != 0 :
-            decmp[xindex, yindex] = cmpband[n]
-            #print '(',xindex,yindex,')',
-            n = n+1
-    #print ' '
-    #print 'Filled', n, 'codes.'
-    #print decmp
-    return decmp
-
 def compress_band_fast(encode) :
     if encode[0,0] != 0 :
         xsize, ysize = encode.shape
@@ -138,3 +99,49 @@ def decompress_band_fast(cmpband, cmpsize, xsize, ysize) :
                 i = i << 2
                 mask = (mask << 2) | 3
     return decmp
+
+
+def ezw_encode(trans) :
+    tr_sign = trans.copy()
+
+    # Zerotree sign:   2'b00
+    # Isolate Zero     2'b01
+    tr_sign[trans == 0] = 1
+    # Positive symbol  2'b10
+    tr_sign[trans > 0] = 2
+    # Negative symbol  2'b11
+    tr_sign[trans < 0] = 3
+
+    trans[trans < 0] = -trans[trans < 0]
+    streamlen = numpy.zeros(8, dtype = numpy.int)
+    cmp_stream = numpy.zeros(8*trans.size, dtype = numpy.uint8)
+
+    # Start from the MSB
+    n = 0
+    cur_bit = 128
+    for i in range(8) :
+        cur_band = trans & cur_bit
+        encode = iterate_band(cur_band, tr_sign)
+        cmpband, size = compress_band_fast(encode)
+        streamlen[i] = size
+        cmp_stream[n:n+size] = cmpband[0:size]
+        cur_bit = cur_bit/2
+        n = n + size
+
+    return cmp_stream[0:n], streamlen
+
+def ezw_decode(cmp_stream, streamlen, xsize, ysize) :
+    cur_bit = 256
+    decmp_tr = numpy.zeros((xsize,ysize), dtype = numpy.uint8)
+    n = 0
+    for i in range(8) :
+        size = streamlen[i]
+        cur_bit = cur_bit/2
+        if size == 0:
+            continue
+        decmp_band = decompress_band_fast(cmp_stream[n:n+size], size, xsize, ysize)
+        decmp_tr[decmp_band==2] = decmp_tr[decmp_band==2]+cur_bit
+        decmp_tr[decmp_band==3] = decmp_tr[decmp_band==3]-cur_bit
+        n = n+size
+
+    return decmp_tr
